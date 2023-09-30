@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/navigation_main"
+    app:startDestination="@id/fragmentMain">
+
+    <fragment
+        android:id="@+id/fragmentMain"
+        android:name="com.selcukileri.wakeup.view.FragmentMain"
+        android:label="fragment_main"
+        tools:layout="@layout/fragment_main" >
+        <action
+            android:id="@+id/action_fragmentMain_to_bookmarksFragment"
+            app:destination="@id/bookmarksFragment" />
+        <action
+            android:id="@+id/action_fragmentMain_to_settingsFragment"
+            app:destination="@id/settingsFragment" />
+    </fragment>
+    <fragment
+        android:id="@+id/bookmarksFragment"
+        android:name="com.selcukileri.wakeup.view.BookmarksFragment"
+        android:label="fragment_bookmarks"
+        tools:layout="@layout/fragment_bookmarks" >
+        <action
+            android:id="@+id/action_bookmarksFragment_to_mapsActivity"
+            app:destination="@id/mapsActivity" />
+        <action
+            android:id="@+id/action_bookmarksFragment_to_fragmentMain"
+            app:destination="@id/fragmentMain" />
+    </fragment>
+    <fragment
+        android:id="@+id/settingsFragment"
+        android:name="com.selcukileri.wakeup.view.SettingsFragment"
+        android:label="fragment_settings"
+        tools:layout="@layout/fragment_settings" >
+        <action
+            android:id="@+id/action_settingsFragment_to_fragmentMain"
+            app:destination="@id/fragmentMain" />
+    </fragment>
+    <activity
+        android:id="@+id/mapsActivity"
+        android:name="com.selcukileri.wakeup.view.MapsActivity"
+        android:label="MapsActivity" />
+</navigation>

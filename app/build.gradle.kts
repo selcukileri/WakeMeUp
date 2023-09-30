@@ -3,11 +3,12 @@ plugins {
     id("org.jetbrains.kotlin.android")
     id("com.google.android.libraries.mapsplatform.secrets-gradle-plugin")
     id ("kotlin-kapt")
+    id("androidx.navigation.safeargs.kotlin")
 }
 
 android {
     namespace = "com.selcukileri.wakeup"
-    compileSdk = 33
+    compileSdk = 34
 
     buildFeatures{
         viewBinding = true
@@ -16,7 +17,7 @@ android {
     defaultConfig {
         applicationId = "com.selcukileri.wakeup"
         minSdk = 24
-        targetSdk = 33
+        targetSdk = 34
         versionCode = 1
         versionName = "1.0"
 
@@ -42,6 +43,10 @@ android {
 }
 
 dependencies {
+    val nav_version = "2.7.3"
+    // Kotlin
+    implementation("androidx.navigation:navigation-fragment-ktx:$nav_version")
+    implementation("androidx.navigation:navigation-ui-ktx:$nav_version")
 
 
     implementation("androidx.core:core-ktx:1.9.0")

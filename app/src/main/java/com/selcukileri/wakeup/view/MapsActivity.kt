@@ -36,6 +36,7 @@ import com.selcukileri.wakeup.roomdb.PlaceDatabase
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
 import io.reactivex.rxjava3.disposables.CompositeDisposable
 import io.reactivex.rxjava3.schedulers.Schedulers
+import kotlin.concurrent.thread
 
 class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMapLongClickListener {
 
@@ -65,7 +66,12 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMapLon
         sharedPreferences = this.getSharedPreferences("com.selcukileri.wakeup", MODE_PRIVATE)
         trackBoolean = false
         locationManager = getSystemService(LOCATION_SERVICE) as LocationManager
+        locationListener = object : LocationListener {
+            override fun onLocationChanged(p0: Location) {
 
+            }
+
+        }
         selectedLatitude = 0.0
         selectedLongitude = 0.0
         db = Room.databaseBuilder(
@@ -232,36 +238,42 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMapLon
     }
 
     fun start(view: View) {
-        showCustomAlertDialog()
-        /*
-        val currentLocation = userLocation()
-        if (currentLocation != null) {
-            val targetLocation = Location("")
-            targetLocation.latitude = selectedLatitude!!
-            targetLocation.longitude = selectedLongitude!!
-            val distance = currentLocation.distanceTo(targetLocation)
-            val selectedDistance = selectedOption
-            val selectedAlertType = selectedAlertType
-            if (distance <= selectedDistance!!.toDouble()) {
-                when (selectedAlertType) {
-                    "Alarm" -> {
-                        triggerAlarm()
-                    }
-                    "Titreşim" -> {
-                        triggerVibration()
-                    }
-                    "Alarm ve Titreşim" -> {
-                        triggerAlarm()
-                        triggerVibration()
+        if (ContextCompat.checkSelfPermission(
+                this,
+                Manifest.permission.ACCESS_FINE_LOCATION
+            ) == PackageManager.PERMISSION_GRANTED
+        ) {
+            locationManager.requestLocationUpdates(
+                LocationManager.GPS_PROVIDER, 5000, 100f, locationListener
+            )
+            val currentLocation =
+                locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER)
+            if (currentLocation != null) {
+                val targetLocation = Location("")
+                targetLocation.latitude = selectedLatitude!!
+                targetLocation.longitude = selectedLongitude!!
+                val distance = currentLocation.distanceTo(targetLocation)
+                val selectedDistance = selectedOption
+                val selectedAlertType = selectedAlertType
+                if (distance <= selectedDistance!!) {
+                    when (selectedAlertType) {
+                        "Alarm" -> {
+                            triggerAlarm()
+                        }
+
+                        "Titreşim" -> {
+                            triggerVibration()
+                        }
+
+                        "Alarm ve Titreşim" -> {
+                            triggerAlarm()
+                            triggerVibration()
+                        }
                     }
                 }
-
-            } else {
-                Toast.makeText(applicationContext,"Konum Seçiniz", Toast.LENGTH_LONG).show()
             }
         }
 
-         */
     }
 
     fun save(view: View) {
@@ -277,7 +289,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMapLon
     }
 
     private fun handleResponse() {
-        val intent = Intent(this, BookmarksActivity::class.java)
+        val intent = Intent(this, BookmarksFragment::class.java)
         intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
         startActivity(intent)
     }
@@ -300,11 +312,11 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMapLon
     }
 
 
-    private fun showCustomAlertDialog2(){
+    private fun showCustomAlertDialog2() {
         val builder = AlertDialog.Builder(this)
         builder.setTitle("Kaç metre kala uyarılmak istersiniz")
-        val options = arrayOf("500m","750m","1000m")
-        builder.setItems(options) { dialog,which ->
+        val options = arrayOf("500m", "750m", "1000m")
+        builder.setItems(options) { dialog, which ->
             selectedOption = options[which].toDouble()
 
         }
@@ -312,34 +324,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMapLon
         builder.show()
     }
 
-    private fun showCustomAlertDialog() {
-        val builder = AlertDialog.Builder(this)
-        builder.setTitle("Alarmla mı uyarılmak istersiniz titreşimle mi?")
-        val options = arrayOf("Alarm", "Titreşim", "Alarm ve Titreşim")
-        var selectedOptionIndex = -1
-        builder.setSingleChoiceItems(options, -1) { dialog, which ->
-            selectedOptionIndex = which
-        }
 
-        builder.setPositiveButton("Tamam") {dialog, which ->
-            when (selectedOptionIndex) {
-                0 -> selectedAlertType = "Alarm"
-                1 -> selectedAlertType = "Titreşim"
-                2 -> selectedAlertType = "Alarm ve Titreşim"
-            }
-            showCustomAlertDialog2()
-
-        }
-        builder.setNegativeButton("İptal") {dialog, which ->
-            //goBackToActivity
-            //val intent = Intent(this,BookmarksActivity::class.java)
-            //startActivity(intent)
-
-        }
-
-
-        builder.setCancelable(false)
-        builder.show()
 
         /*{ dialog, which ->
             when (which) {
@@ -382,7 +367,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMapLon
          */
         //val dialog: AlertDialog = builder.create()
         //dialog.show()
-    }
+
 
     private fun triggerVibration() {
         val vibrator = getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
@@ -390,12 +375,52 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMapLon
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             // Android Oreo ve sonrası için
             vibrator.vibrate(
-                longArrayOf(0, 500, 110, 500, 110, 450, 110, 200, 110, 170, 40, 450, 110, 200, 110, 170, 40, 500), -1)
+                longArrayOf(
+                    0,
+                    500,
+                    110,
+                    500,
+                    110,
+                    450,
+                    110,
+                    200,
+                    110,
+                    170,
+                    40,
+                    450,
+                    110,
+                    200,
+                    110,
+                    170,
+                    40,
+                    500
+                ), -1
+            )
             //vibrator.vibrate(VibrationEffect.createOneShot(1000, VibrationEffect.DEFAULT_AMPLITUDE))
         } else {
             // Android Nougat ve öncesi için
             vibrator.vibrate(
-                longArrayOf(0, 500, 110, 500, 110, 450, 110, 200, 110, 170, 40, 450, 110, 200, 110, 170, 40, 500), -1)
+                longArrayOf(
+                    0,
+                    500,
+                    110,
+                    500,
+                    110,
+                    450,
+                    110,
+                    200,
+                    110,
+                    170,
+                    40,
+                    450,
+                    110,
+                    200,
+                    110,
+                    170,
+                    40,
+                    500
+                ), -1
+            )
         }
     }
 
