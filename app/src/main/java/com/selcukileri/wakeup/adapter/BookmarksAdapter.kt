@@ -30,7 +30,9 @@ class BookmarksAdapter(val placeList: List<Place>) : RecyclerView.Adapter<Bookma
             val context = holder.itemView.context
             val intent = Intent(context,MapsActivity::class.java)
             intent.putExtra("selectedPlace",placeList[position])
+            //intent.putExtra("selectedPlaces", placeList.toTypedArray())
             intent.putExtra("info", "old")
+            //intent.putExtra("info2","start2")
             context.startActivity(intent)
         }
     }

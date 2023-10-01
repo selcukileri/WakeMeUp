@@ -66,13 +66,15 @@
         map:layout_constraintEnd_toEndOf="parent"
         map:layout_constraintStart_toStartOf="parent" />
 
-    <Button
+    <TextView
         android:id="@+id/remainingDistance"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginStart="8dp"
         android:layout_marginEnd="8dp"
-        android:onClick="delete"
+        android:textSize="22sp"
+        android:background="#A8BDBF"
+        android:textAlignment="center"
         android:text="Hedefe Kalan Mesafe: "
         map:layout_constraintBottom_toTopOf="@+id/stopButton"
         map:layout_constraintEnd_toEndOf="parent"
