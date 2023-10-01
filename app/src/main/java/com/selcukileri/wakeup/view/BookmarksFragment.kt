@@ -24,6 +24,7 @@ import io.reactivex.rxjava3.schedulers.Schedulers
 class BookmarksFragment : Fragment() {
     private lateinit var binding: FragmentBookmarksBinding
     private val compositDisposable = CompositeDisposable()
+    private var placeList: List<Place> = emptyList()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -41,6 +42,9 @@ class BookmarksFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        binding.recyclerView.layoutManager = LinearLayoutManager(requireContext())
+        val adapter = BookmarksAdapter(placeList)
+        binding.recyclerView.adapter = adapter
         val db = Room.databaseBuilder(requireContext(), PlaceDatabase::class.java,"Places").build()
         val placeDao = db.placeDao()
         compositDisposable.add(placeDao.getAll()
@@ -48,21 +52,20 @@ class BookmarksFragment : Fragment() {
             .observeOn(AndroidSchedulers.mainThread())
             .subscribe(this::handleResponse)
         )
-        binding.buttonBack.setOnClickListener{
-            val action = BookmarksFragmentDirections.actionBookmarksFragmentToFragmentMain()
-            Navigation.findNavController(it).navigate(action)
-        }
     }
     private fun handleResponse(placeList: List<Place>) {
         binding.recyclerView.layoutManager = LinearLayoutManager(requireContext())
         val adapter = BookmarksAdapter(placeList)
         binding.recyclerView.adapter = adapter
+        adapter.notifyDataSetChanged()
     }
 
+    @Deprecated("Deprecated in Java")
     override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
         inflater.inflate(R.menu.wakeup_menu,menu)
         return super.onCreateOptionsMenu(menu,inflater)
     }
+    @Deprecated("Deprecated in Java")
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         if (item.itemId == R.id.add_item) {
             val intent = Intent(requireContext(), MapsActivity::class.java)
@@ -71,6 +74,11 @@ class BookmarksFragment : Fragment() {
 
         }
         return super.onOptionsItemSelected(item)
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        compositDisposable.clear()
     }
 
 }

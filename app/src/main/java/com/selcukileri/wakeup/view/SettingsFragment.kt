@@ -21,7 +21,7 @@ class SettingsFragment : Fragment() {
     private lateinit var binding: FragmentSettingsBinding
     private var selectedOption: Double? = null
     private val compositDisposable = CompositeDisposable()
-    private lateinit var sharedPreferences: SharedPreferences
+    private lateinit var sharedPreferencesSettings: SharedPreferences
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -33,7 +33,7 @@ class SettingsFragment : Fragment() {
     ): View? {
         // Inflate the layout for this fragment
         binding = FragmentSettingsBinding.inflate(inflater, container, false)
-        sharedPreferences = requireActivity().getSharedPreferences("SettingsPrefs", MODE_PRIVATE)
+        sharedPreferencesSettings = requireActivity().getSharedPreferences("SettingsPrefs", MODE_PRIVATE)
 
         return binding.root
 
@@ -41,8 +41,8 @@ class SettingsFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        val selectedDistance = sharedPreferences.getString("selectedDistance", "")
-        val selectedAlertType = sharedPreferences.getString("selectedAlertType", "")
+        val selectedDistance = sharedPreferencesSettings.getString("selectedDistance", "")
+        val selectedAlertType = sharedPreferencesSettings.getString("selectedAlertType", "")
         if (!selectedDistance.isNullOrEmpty()) {
             binding.selectedDistance.text = "Seçtiğiniz uzaklık: $selectedDistance metre"
         }
@@ -70,7 +70,7 @@ class SettingsFragment : Fragment() {
             val selectedDistance = options[which]
             binding.selectedDistance.text = "Seçtiğiniz uzaklık: $selectedDistance metre"
 
-            val editor = sharedPreferences.edit()
+            val editor = sharedPreferencesSettings.edit()
             editor.putString("selectedDistance",selectedDistance)
             editor.apply()
         }
@@ -92,7 +92,7 @@ class SettingsFragment : Fragment() {
                 val selectedAlertType = options[selectedOptionIndex]
                 binding.selectedAlertType.text = "Seçtiğiniz alarm tipi: $selectedAlertType"
 
-                val editor = sharedPreferences.edit()
+                val editor = sharedPreferencesSettings.edit()
                 editor.putString("selectedAlertType",selectedAlertType)
                 editor.apply()
             }

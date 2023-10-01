@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:map="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
+    android:id="@+id/fragment_container"
     android:layout_height="match_parent">
 
     <fragment
@@ -23,14 +23,11 @@
         android:id="@+id/placeText"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginStart="8dp"
-        android:layout_marginEnd="8dp"
         android:ems="10"
         android:hint="Yer ismi Giriniz"
         android:inputType="text"
         map:layout_constraintBottom_toTopOf="@+id/startButton"
         map:layout_constraintEnd_toEndOf="parent"
-        map:layout_constraintHorizontal_bias="1.0"
         map:layout_constraintStart_toStartOf="parent" />
 
     <Button
@@ -43,7 +40,6 @@
         android:text="Başlat"
         map:layout_constraintBottom_toTopOf="@+id/saveButton"
         map:layout_constraintEnd_toEndOf="parent"
-        map:layout_constraintHorizontal_bias="0.0"
         map:layout_constraintStart_toStartOf="parent" />
 
     <Button
@@ -64,10 +60,34 @@
         android:layout_height="wrap_content"
         android:layout_marginStart="8dp"
         android:layout_marginEnd="8dp"
-        android:layout_marginBottom="8dp"
         android:onClick="delete"
         android:text="Sil"
+        map:layout_constraintBottom_toTopOf="@+id/remainingDistance"
+        map:layout_constraintEnd_toEndOf="parent"
+        map:layout_constraintStart_toStartOf="parent" />
+
+    <Button
+        android:id="@+id/remainingDistance"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:layout_marginEnd="8dp"
+        android:onClick="delete"
+        android:text="Hedefe Kalan Mesafe: "
+        map:layout_constraintBottom_toTopOf="@+id/stopButton"
+        map:layout_constraintEnd_toEndOf="parent"
+        map:layout_constraintStart_toStartOf="parent" />
+
+    <Button
+        android:id="@+id/stopButton"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:layout_marginEnd="8dp"
+        android:onClick="delete"
+        android:text="Durdur"
         map:layout_constraintBottom_toBottomOf="parent"
         map:layout_constraintEnd_toEndOf="parent"
         map:layout_constraintStart_toStartOf="parent" />
+
 </androidx.constraintlayout.widget.ConstraintLayout>

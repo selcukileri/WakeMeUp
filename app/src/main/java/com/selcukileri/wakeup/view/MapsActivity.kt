@@ -8,6 +8,9 @@ import android.content.pm.PackageManager
 import android.location.Location
 import android.location.LocationListener
 import android.location.LocationManager
+import android.media.Ringtone
+import android.media.RingtoneManager
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.Vibrator
@@ -44,9 +47,9 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMapLon
     private lateinit var locationManager: LocationManager
     private lateinit var locationListener: LocationListener
     private lateinit var permissionLauncher: ActivityResultLauncher<String>
+    private lateinit var sharedPreferencesSettings: SharedPreferences
     private lateinit var sharedPreferences: SharedPreferences
     private var selectedOption: Double? = null
-    private var selectedAlertType: String = ""
     private var trackBoolean: Boolean? = null
     private var selectedLatitude: Double? = null
     private var selectedLongitude: Double? = null
@@ -54,6 +57,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMapLon
     private lateinit var placeDao: PlaceDao
     private val compositDisposable = CompositeDisposable()
     private var placeFromBookmarks: Place? = null
+    private var alarmRingtone: Ringtone? = null
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -61,7 +65,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMapLon
 
         binding = ActivityMapsBinding.inflate(layoutInflater)
         setContentView(binding.root)
-        sharedPreferences = this.getSharedPreferences("SettingsPrefs", MODE_PRIVATE)
+        sharedPreferencesSettings = this.getSharedPreferences("SettingsPrefs", MODE_PRIVATE)
         registerLauncher()
         sharedPreferences = this.getSharedPreferences("com.selcukileri.wakeup", MODE_PRIVATE)
         trackBoolean = false
@@ -96,6 +100,8 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMapLon
         val intent = intent
         val info = intent.getStringExtra("info")
         if (info == "new") {
+            binding.remainingDistance.visibility = View.GONE
+            binding.stopButton.visibility = View.GONE
             binding.saveButton.visibility = View.VISIBLE
             binding.deleteButton.visibility = View.GONE
             binding.startButton.visibility = View.GONE
@@ -158,8 +164,16 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMapLon
                 binding.startButton.visibility = View.VISIBLE
                 binding.saveButton.visibility = View.GONE
                 binding.deleteButton.visibility = View.VISIBLE
+                binding.remainingDistance.visibility = View.GONE
+                binding.stopButton.visibility = View.GONE
             }
-        } //else if (info == "start")
+        } else if (info == "start") {
+            binding.startButton.visibility = View.GONE
+            binding.saveButton.visibility = View.GONE
+            binding.deleteButton.visibility = View.GONE
+            binding.remainingDistance.visibility = View.VISIBLE
+            binding.stopButton.visibility = View.VISIBLE
+        }
 
 
     }
@@ -238,61 +252,87 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMapLon
     }
 
     fun start(view: View) {
+        val selectedDistanceStr =
+            sharedPreferencesSettings.getString("selectedDistance", "")
+        val selectedAlertType =
+            sharedPreferencesSettings.getString("selectedAlertType", "")
+        if (selectedAlertType.isNullOrEmpty() || selectedDistanceStr.isNullOrEmpty()) {
+            val builder = AlertDialog.Builder(this)
+            builder.setTitle("Uyarı")
+            builder.setMessage("Lütfen ayarlara gidip seçenekleri düzgün ayarlayın.")
+            builder.setPositiveButton("Tamam") { dialog, _ ->
+                dialog.dismiss()
+            }
+            builder.setNegativeButton("Ayarlara Git") { dialog, _ ->
+                val settingsFragment = SettingsFragment()
+                val transaction = supportFragmentManager.beginTransaction()
+                transaction.replace(R.id.fragment_container, settingsFragment)
+                transaction.addToBackStack(null)
+                transaction.commit()
+                binding.startButton.visibility = View.GONE
+                binding.saveButton.visibility = View.GONE
+                binding.deleteButton.visibility = View.GONE
+                binding.remainingDistance.visibility = View.GONE
+                binding.stopButton.visibility = View.GONE
+                binding.placeText.visibility = View.GONE
+                dialog.dismiss()
+            }
 
-        val intent = intent
-        val info = intent.getStringExtra("info")
-        if (info == "old") {
-            if (ContextCompat.checkSelfPermission(
-                    this,
-                    Manifest.permission.ACCESS_FINE_LOCATION
-                ) == PackageManager.PERMISSION_GRANTED
-            ) {
-                locationManager.requestLocationUpdates(
-                    LocationManager.GPS_PROVIDER, 5000, 100f, locationListener
-                )
-                val currentLocation =
-                    locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER)
-                if (currentLocation != null) {
-                    if (placeFromBookmarks != null) {
-                        placeFromBookmarks?.let {
-                            val targetLocation = Location("")
-                            targetLocation.latitude = it.latitude
-                            targetLocation.longitude = it.longitude
-                            val distance = currentLocation.distanceTo(targetLocation)
-                            val selectedDistanceStr =
-                                sharedPreferences.getString("selectedDistance", "")
-                            val selectedAlertType =
-                                sharedPreferences.getString("selectedAlertType", "")
-                            val selectedDistance = selectedDistanceStr?.toDouble()
-                            if (selectedDistance != null) {
-                                if (distance <= selectedDistance) {
-                                    when (selectedAlertType) {
-                                        "Alarm" -> {
-                                            triggerAlarm()
-                                            Log.d("wakemeup", "alarm triggered")
-                                        }
+            val alertDialog = builder.create()
+            alertDialog.show()
+        } else {
+            val intent = intent
+            val info = intent.getStringExtra("info")
+            if (info == "old") {
+                if (ContextCompat.checkSelfPermission(
+                        this,
+                        Manifest.permission.ACCESS_FINE_LOCATION
+                    ) == PackageManager.PERMISSION_GRANTED
+                ) {
+                    locationManager.requestLocationUpdates(
+                        LocationManager.GPS_PROVIDER, 5000, 100f, locationListener
+                    )
+                    val currentLocation =
+                        locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER)
+                    if (currentLocation != null) {
+                        if (placeFromBookmarks != null) {
+                            placeFromBookmarks?.let {
+                                val targetLocation = Location("")
+                                targetLocation.latitude = it.latitude
+                                targetLocation.longitude = it.longitude
+                                val distance = currentLocation.distanceTo(targetLocation)
+                                val selectedDistance = selectedDistanceStr.toDouble()
+                                if (selectedDistance != null) {
+                                    if (distance <= selectedDistance) {
+                                        when (selectedAlertType) {
+                                            "Alarm" -> {
+                                                triggerAlarm()
+                                                Log.d("wakemeup", "alarm triggered")
+                                            }
 
-                                        "Titreşim" -> {
-                                            triggerVibration()
-                                            Log.d("wakemeup", "vibration triggered")
-                                        }
+                                            "Titreşim" -> {
+                                                triggerVibration()
+                                                Log.d("wakemeup", "vibration triggered")
+                                            }
 
-                                        "Alarm ve Titreşim" -> {
-                                            triggerAlarm()
-                                            triggerVibration()
-                                            Log.d("wakemeup", "alarm and vibration triggered")
+                                            "Alarm ve Titreşim" -> {
+                                                triggerAlarm()
+                                                triggerVibration()
+                                                Log.d("wakemeup", "alarm and vibration triggered")
+                                            }
                                         }
                                     }
+                                } else {
+                                    Toast.makeText(
+                                        applicationContext,
+                                        "Lütfen ayarlara gidip uzaklık seçiniz.",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
                                 }
-                            } else {
-                                Toast.makeText(
-                                    applicationContext,
-                                    "Lütfen ayarlara gidip uzaklık seçiniz.",
-                                    Toast.LENGTH_SHORT
-                                ).show()
                             }
                         }
                     }
+
                 }
 
 
@@ -316,9 +356,22 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMapLon
     }
 
     private fun handleResponse() {
-        val intent = Intent(this, BookmarksFragment::class.java)
+        val bookmarksFragment = BookmarksFragment()
+        val transaction = supportFragmentManager.beginTransaction()
+        transaction.replace(R.id.fragment_container, bookmarksFragment)
+        transaction.commit()
+        binding.startButton.visibility = View.GONE
+        binding.saveButton.visibility = View.GONE
+        binding.deleteButton.visibility = View.GONE
+        binding.remainingDistance.visibility = View.GONE
+        binding.stopButton.visibility = View.GONE
+        binding.placeText.visibility = View.GONE
+
+        /*val intent = Intent(this, BookmarksFragment::class.java)
         intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
         startActivity(intent)
+
+         */
     }
 
     fun delete(view: View) {
@@ -408,7 +461,13 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMapLon
     }
 
     private fun triggerAlarm() {
-
+        try {
+            val notification: Uri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
+            alarmRingtone = RingtoneManager.getRingtone(applicationContext, notification)
+            alarmRingtone?.play()
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
     }
 }
 
