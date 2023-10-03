@@ -47,6 +47,7 @@ dependencies {
     // Kotlin
     implementation("androidx.navigation:navigation-fragment-ktx:$nav_version")
     implementation("androidx.navigation:navigation-ui-ktx:$nav_version")
+    implementation ("com.google.code.gson:gson:2.9.1")
 
 
     implementation("androidx.core:core-ktx:1.12.0")

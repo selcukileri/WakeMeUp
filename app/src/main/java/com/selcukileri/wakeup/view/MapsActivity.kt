@@ -39,6 +39,7 @@ import com.selcukileri.wakeup.roomdb.PlaceDatabase
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
 import io.reactivex.rxjava3.disposables.CompositeDisposable
 import io.reactivex.rxjava3.schedulers.Schedulers
+import com.google.gson.Gson
 
 class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMapLongClickListener {
 
@@ -49,6 +50,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMapLon
     private lateinit var permissionLauncher: ActivityResultLauncher<String>
     private lateinit var sharedPreferencesSettings: SharedPreferences
     private lateinit var sharedPreferences: SharedPreferences
+    private lateinit var sharedPreferencesSelectedPlace: SharedPreferences
     private var selectedOption: Double? = null
     private var trackBoolean: Boolean? = null
     private var selectedLatitude: Double? = null
@@ -66,6 +68,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMapLon
 
         binding = ActivityMapsBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        sharedPreferencesSelectedPlace = this.getSharedPreferences("selectedPlaces", MODE_PRIVATE)
         sharedPreferencesSettings = this.getSharedPreferences("SettingsPrefs", MODE_PRIVATE)
         registerLauncher()
         sharedPreferences = this.getSharedPreferences("com.selcukileri.wakeup", MODE_PRIVATE)
@@ -99,11 +102,10 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMapLon
         mMap = googleMap
         mMap.setOnMapLongClickListener(this)
         val intent = intent
-        val info = intent.getStringExtra("info")
-        val info1 = intent.getStringExtra("info1")
+        var info = intent.getStringExtra("info")
         //val info2 = intent.getStringExtra("info2")
-        //val info2 = intent.getStringExtra("info2")
-        //Log.d("INFO_DEBUG", "info: $info, info2: $info2")
+        val place = intent.getStringExtra("infoPlace")
+        //Log.d("INFO_DEBUG", "info: $info, info1: $info2")
         if (info == "new") {
             binding.remainingDistance.visibility = View.GONE
             binding.stopButton.visibility = View.GONE
@@ -165,25 +167,28 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMapLon
                 val latlng = LatLng(it.latitude, it.longitude)
                 mMap.addMarker(MarkerOptions().position(latlng).title(it.name))
                 mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(latlng, 15f))
+                val placeAsString = placeToString(it)
+                val editor = sharedPreferencesSelectedPlace.edit()
+                editor.putString("selectedPlaces", placeAsString)
+                editor.apply()
                 binding.placeText.setText(it.name)
                 binding.startButton.visibility = View.VISIBLE
                 binding.saveButton.visibility = View.GONE
                 binding.deleteButton.visibility = View.VISIBLE
                 binding.remainingDistance.visibility = View.GONE
                 binding.stopButton.visibility = View.GONE
+                Log.d("placebookmarsOLD", "placebookmarks ${placeFromBookmarks?.name}")
+
             }
         } else if (info == "start") {
-            binding.startButton.visibility = View.GONE
-            binding.placeText.visibility = View.GONE
-            binding.saveButton.visibility = View.GONE
-            binding.deleteButton.visibility = View.GONE
-            binding.remainingDistance.visibility = View.VISIBLE
-            binding.stopButton.visibility = View.VISIBLE
+            binding.stopButton.setOnClickListener {
 
+            }
             val selectedDistanceStr =
                 sharedPreferencesSettings.getString("selectedDistance", "")
             val selectedAlertType =
                 sharedPreferencesSettings.getString("selectedAlertType", "")
+            val selectedPlacesString = sharedPreferencesSelectedPlace.getString("selectedPlaces","")
             if (ContextCompat.checkSelfPermission(
                     this,
                     Manifest.permission.ACCESS_FINE_LOCATION
@@ -197,12 +202,14 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMapLon
                 if (currentLocation != null) {
                     val lastCurrentLocation =
                         LatLng(currentLocation.latitude, currentLocation.longitude)
-                    mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(lastCurrentLocation, 20f))
+                    mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(lastCurrentLocation, 17f))
                     mMap.isMyLocationEnabled = true
-                    placeFromBookmarks = intent.getSerializableExtra("selectedPlace") as? Place
+
                     Log.d("placebookmars", "placebookmarks ${placeFromBookmarks?.name}")
-                    if (placeFromBookmarks != null){
-                        placeFromBookmarks.let {
+
+                    if (selectedPlacesString != null) {
+                        val placeFromSharedPreferences = stringToPlace(selectedPlacesString.toString())
+                        placeFromSharedPreferences.let {
                             val latlng = LatLng(it!!.latitude, it.longitude)
                             mMap.addMarker(MarkerOptions().position(latlng).title(it.name))
                             val targetLocation = Location("")
@@ -237,16 +244,24 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMapLon
                     } else {
                         Log.d("wakemeup", "place From bookmarks null or empty")
                     }
-
                 }
-
-
             }
-
-
+            binding.startButton.visibility = View.GONE
+            binding.placeText.visibility = View.GONE
+            binding.saveButton.visibility = View.GONE
+            binding.deleteButton.visibility = View.GONE
+            binding.remainingDistance.visibility = View.VISIBLE
+            binding.stopButton.visibility = View.VISIBLE
         }
+    }
+    fun placeToString(place: Place): String {
+        val gson = Gson()
+        return gson.toJson(place)
+    }
 
-
+    fun stringToPlace(string: String): Place {
+        val gson = Gson()
+        return gson.fromJson(string, Place::class.java)
     }
 
     private fun registerLauncher() {
@@ -354,6 +369,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMapLon
         } else {
             val intent = Intent(this, MapsActivity::class.java)
             intent.putExtra("info", "start")
+            intent.putExtra("infoPlace", placeFromBookmarks)
             startActivity(intent)
         }
 
