@@ -197,8 +197,11 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMapLon
                 locationManager.requestLocationUpdates(
                     LocationManager.GPS_PROVIDER, 5000, 100f, locationListener
                 )
-                val currentLocation =
+                 var currentLocation =
                     locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER)
+                if (currentLocation == null) {
+                    currentLocation = locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER)
+                }
                 if (currentLocation != null) {
                     val lastCurrentLocation =
                         LatLng(currentLocation.latitude, currentLocation.longitude)
@@ -242,8 +245,12 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMapLon
                             }
                         }
                     } else {
+                        Toast.makeText(applicationContext, "mal hasan", Toast.LENGTH_SHORT).show()
                         Log.d("wakemeup", "place From bookmarks null or empty")
                     }
+                } else {
+                    Toast.makeText(applicationContext, "mal hasan", Toast.LENGTH_SHORT).show()
+
                 }
             }
             binding.startButton.visibility = View.GONE
