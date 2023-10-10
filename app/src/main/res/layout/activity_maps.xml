@@ -19,6 +19,16 @@
         map:layout_constraintTop_toTopOf="parent"
         tools:context=".view.MapsActivity" />
 
+    <Button
+        android:id="@+id/searchButton"
+        android:layout_width="262dp"
+        android:layout_height="54dp"
+        android:text="Yer Ara"
+        map:layout_constraintEnd_toEndOf="parent"
+        map:layout_constraintHorizontal_bias="0.0"
+        map:layout_constraintStart_toStartOf="parent"
+        map:layout_constraintTop_toTopOf="parent" />
+
     <EditText
         android:id="@+id/placeText"
         android:layout_width="match_parent"

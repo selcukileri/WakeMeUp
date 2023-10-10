@@ -30,6 +30,10 @@ import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.MarkerOptions
+import com.google.android.libraries.places.api.Places
+import com.google.android.libraries.places.api.model.TypeFilter
+import com.google.android.libraries.places.widget.Autocomplete
+import com.google.android.libraries.places.widget.model.AutocompleteActivityMode
 import com.google.android.material.snackbar.Snackbar
 import com.selcukileri.wakeup.R
 import com.selcukileri.wakeup.databinding.ActivityMapsBinding
@@ -51,16 +55,18 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMapLon
     private lateinit var sharedPreferencesSettings: SharedPreferences
     private lateinit var sharedPreferences: SharedPreferences
     private lateinit var sharedPreferencesSelectedPlace: SharedPreferences
+    private val PLACE_AUTOCOMPLETE_REQUEST_CODE = 1
     private var selectedOption: Double? = null
     private var trackBoolean: Boolean? = null
     private var selectedLatitude: Double? = null
     private var selectedLongitude: Double? = null
+    private var isAlarmOrVibrationActive = false
     private lateinit var db: PlaceDatabase
     private lateinit var placeDao: PlaceDao
     private val compositDisposable = CompositeDisposable()
     private var placeFromBookmarks: Place? = null
-    private var placeFromBookmarks2: Place? = null
     private var alarmRingtone: Ringtone? = null
+
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -71,6 +77,10 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMapLon
         sharedPreferencesSelectedPlace = this.getSharedPreferences("selectedPlaces", MODE_PRIVATE)
         sharedPreferencesSettings = this.getSharedPreferences("SettingsPrefs", MODE_PRIVATE)
         registerLauncher()
+        val apiKey = resources.getString(R.string.google_maps_api_key)
+        if (!Places.isInitialized()){
+            Places.initialize(applicationContext,apiKey)
+        }
         sharedPreferences = this.getSharedPreferences("com.selcukileri.wakeup", MODE_PRIVATE)
         trackBoolean = false
         locationManager = getSystemService(LOCATION_SERVICE) as LocationManager
@@ -107,6 +117,21 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMapLon
         val place = intent.getStringExtra("infoPlace")
         //Log.d("INFO_DEBUG", "info: $info, info1: $info2")
         if (info == "new") {
+            binding.searchButton.setOnClickListener{
+                val query = "Burada arayın"
+                showSearchScreen(query)
+                /*val searchFragment = SearchFragment()
+                val transaction = supportFragmentManager.beginTransaction()
+                transaction.replace(R.id.fragment_container, searchFragment)
+                transaction.commit()
+                binding.stopButton.visibility = View.GONE
+                binding.remainingDistance.visibility = View.GONE
+                binding.searchButton.visibility = View.GONE
+                binding.saveButton.visibility = View.GONE
+                binding.placeText.visibility = View.GONE
+
+                 */
+            }
             binding.remainingDistance.visibility = View.GONE
             binding.stopButton.visibility = View.GONE
             binding.saveButton.visibility = View.VISIBLE
@@ -177,12 +202,20 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMapLon
                 binding.deleteButton.visibility = View.VISIBLE
                 binding.remainingDistance.visibility = View.GONE
                 binding.stopButton.visibility = View.GONE
+                binding.searchButton.visibility = View.GONE
                 Log.d("placebookmarsOLD", "placebookmarks ${placeFromBookmarks?.name}")
 
             }
         } else if (info == "start") {
             binding.stopButton.setOnClickListener {
-
+                stopAlarmOrVibration()
+                val bookmarksFragment = BookmarksFragment()
+                val transaction = supportFragmentManager.beginTransaction()
+                transaction.replace(R.id.fragment_container, bookmarksFragment)
+                transaction.commit()
+                binding.stopButton.visibility = View.GONE
+                binding.remainingDistance.visibility = View.GONE
+                binding.searchButton.visibility = View.GONE
             }
             val selectedDistanceStr =
                 sharedPreferencesSettings.getString("selectedDistance", "")
@@ -228,17 +261,20 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMapLon
                                 when (selectedAlertType) {
                                     "Alarm" -> {
                                         triggerAlarm()
+                                        stopAlarmOrVibration()
                                         Log.d("wakemeup", "alarm triggered")
                                     }
 
                                     "Titreşim" -> {
                                         triggerVibration()
+                                        stopAlarmOrVibration()
                                         Log.d("wakemeup", "vibration triggered")
                                     }
 
                                     "Alarm ve Titreşim" -> {
                                         triggerAlarm()
                                         triggerVibration()
+                                        stopAlarmOrVibration()
                                         Log.d("wakemeup", "alarm and vibration triggered")
                                     }
                                 }
@@ -259,7 +295,19 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMapLon
             binding.deleteButton.visibility = View.GONE
             binding.remainingDistance.visibility = View.VISIBLE
             binding.stopButton.visibility = View.VISIBLE
+            binding.searchButton.visibility = View.GONE
         }
+    }
+    private fun showSearchScreen(query: String) {
+        val placesClient = Places.createClient(this)
+        val fields = listOf(com.google.android.libraries.places.api.model.Place.Field.ID, com.google.android.libraries.places.api.model.Place.Field.NAME, com.google.android.libraries.places.api.model.Place.Field.LAT_LNG)
+
+        val intent = Autocomplete.IntentBuilder(AutocompleteActivityMode.FULLSCREEN, fields)
+            .setTypeFilter(TypeFilter.ADDRESS)
+            .setInitialQuery(query)
+            .build(this)
+
+        startActivityForResult(intent, PLACE_AUTOCOMPLETE_REQUEST_CODE)
     }
     fun placeToString(place: Place): String {
         val gson = Gson()
@@ -494,6 +542,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMapLon
                 ), -1
             )
         }
+        isAlarmOrVibrationActive = true
     }
 
     private fun triggerAlarm() {
@@ -501,11 +550,30 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMapLon
             val notification: Uri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
             alarmRingtone = RingtoneManager.getRingtone(applicationContext, notification)
             alarmRingtone?.play()
+            isAlarmOrVibrationActive = true
         } catch (e: Exception) {
             e.printStackTrace()
         }
     }
+    private fun stopAlarmOrVibration(){
+        if (isAlarmOrVibrationActive) {
+            val alertDialogBuilder = AlertDialog.Builder(this)
+            alertDialogBuilder.setMessage("Susturmak için tamama basınız.")
+            alertDialogBuilder.setPositiveButton("Tamam") {dialog, which ->
+                if (alarmRingtone?.isPlaying == true) {
+                    alarmRingtone?.stop()
+                }
+                val vibrator = getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
+                vibrator.cancel()
+                isAlarmOrVibrationActive = false
+            }
+            alertDialogBuilder.setCancelable(false)
+            val alertDialog = alertDialogBuilder.create()
+            alertDialog.show()
+        }
+    }
 }
+
 
 private fun AlertDialog.Builder.setMessage(s: String, s1: String) {
 
