@@ -228,7 +228,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMapLon
                 ) == PackageManager.PERMISSION_GRANTED
             ) {
                 locationManager.requestLocationUpdates(
-                    LocationManager.GPS_PROVIDER, 5000, 100f, locationListener
+                    LocationManager.GPS_PROVIDER, 0, 0f, locationListener
                 )
                  var currentLocation =
                     locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER)
@@ -555,7 +555,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMapLon
             e.printStackTrace()
         }
     }
-    private fun stopAlarmOrVibration(){
+    private fun  stopAlarmOrVibration(){
         if (isAlarmOrVibrationActive) {
             val alertDialogBuilder = AlertDialog.Builder(this)
             alertDialogBuilder.setMessage("Susturmak için tamama basınız.")
